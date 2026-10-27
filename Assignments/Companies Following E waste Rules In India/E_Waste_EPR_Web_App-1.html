@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>E-Waste EPR Calculator</title>
+<style>
+body{font-family:Arial;margin:0;background:#f4f7fb;color:#172033}.wrap{max-width:1100px;margin:auto;padding:22px}
+.hero{background:#28734b;color:white;padding:25px;border-radius:18px;margin-bottom:18px}.hero h1{margin:0 0 8px}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:18px}.card{background:white;padding:18px;border-radius:15px;margin-bottom:18px;box-shadow:0 4px 18px #0001}
+label{display:block;font-weight:bold;margin:12px 0 5px}input,select,button{width:100%;padding:10px;border:1px solid #ccd4df;border-radius:8px;font-size:14px}button{background:#28734b;color:#fff;border:0;margin-top:12px;font-weight:bold;cursor:pointer}.red{background:#b33}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th{background:#edf3ef}
+.ok{color:#146b35;font-weight:bold}.bad{color:#a21d1d;font-weight:bold}.stats{display:flex;gap:10px;margin-bottom:18px}.stat{background:#fff;padding:14px;border-radius:12px;flex:1}.stat b{display:block;font-size:22px;margin-top:5px}
+.note{padding:12px;background:#fff6dc;border-left:4px solid #d69b00}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.stats{display:grid;grid-template-columns:1fr 1fr}.tablebox{overflow:auto}}
+</style></head>
+<body><div class="wrap">
+<div class="hero"><h1>♻️ E-Waste EPR Calculator</h1><div>Registration • EPR Target • Fee Lookup • Compliance Report</div></div>
+<div class="stats"><div class="stat">Year<b id="ys">2026–27</b></div><div class="stat">Target<b id="rs">70%</b></div><div class="stat">Companies<b id="cs">5</b></div><div class="stat">Compliant<b id="oks">0</b></div></div>
+<div class="grid"><div>
+<div class="card"><h2>Registration Form</h2>
+<label>Company Name</label><input id="name" placeholder="Dixon Technologies">
+<label>Entity Type</label><select id="type"><option>Manufacturer</option><option>Producer</option><option>Recycler</option><option>Refurbisher</option></select>
+<label>Annual E-Waste Generated / Handled (MT)</label><input id="annual" type="number" min="0">
+<label>Actual Recycled (MT)</label><input id="actual" type="number" min="0">
+<button onclick="add()">Add Company</button><button class="red" onclick="resetData()">Reset Sample Data</button></div>
+<div class="card"><h2>Financial Year</h2><select id="year" onchange="render()"><option>2023-24</option><option>2024-25</option><option>2025-26</option><option selected>2026-27</option><option>2027-28</option><option>2028-29</option></select></div>
+<div class="card"><h2>Rules</h2><p>2023–24 / 2024–25: <b>60%</b></p><p>2025–26 / 2026–27: <b>70%</b></p><p>2027–28 onward: <b>80%</b></p><p><b>Target = Annual E-Waste × Target %</b></p></div>
+</div>
+<div>
+<div class="card"><h2>Output Report</h2><div class="tablebox"><table><thead><tr><th>Company</th><th>Type</th><th>Annual</th><th>Target</th><th>Actual</th><th>Fee</th><th>Status</th><th></th></tr></thead><tbody id="out"></tbody></table></div></div>
+<div class="card"><h2>Registration Fee Lookup</h2><table><tr><th>Target</th><th>Fee</th></tr><tr><td>&lt; 50 MT</td><td>₹2,500</td></tr><tr><td>50–&lt;100 MT</td><td>₹7,500</td></tr><tr><td>100–&lt;1000 MT</td><td>₹1,50,000</td></tr><tr><td>1000–&lt;5000 MT</td><td>₹10,00,000</td></tr><tr><td>5000+ MT</td><td>₹15,00,000</td></tr></table></div>
+<div class="note"><b>Compliance:</b> Compliant if actual recycled ≥ EPR target; otherwise Non-Compliant.</div>
+</div></div></div>
+<script>
+const samples=[
+{name:"Dixon Technologies",type:"Manufacturer",annual:120,actual:90},
+{name:"Kaynes Technology",type:"Producer",annual:80,actual:50},
+{name:"Foxconn India",type:"Manufacturer",annual:1500,actual:1100},
+{name:"Tata Electronics",type:"Producer",annual:6000,actual:4000},
+{name:"Centum",type:"Recycler",annual:60,actual:42}];
+let data=JSON.parse(localStorage.getItem("ewasteData")||"null")||samples;
+function rate(){let y=document.getElementById("year").value;return(y=="2023-24"||y=="2024-25")?.6:(y=="2025-26"||y=="2026-27")?.7:.8}
+function fee(t){return t<50?2500:t<100?7500:t<1000?150000:t<5000?1000000:1500000}
+function money(n){return "₹"+n.toLocaleString("en-IN")}
+function save(){localStorage.setItem("ewasteData",JSON.stringify(data))}
+function add(){let n=name.value.trim(),a=+annual.value,x=+actual.value;if(!n||a<0||x<0||!isFinite(a)||!isFinite(x)){alert("Enter valid values.");return}data.push({name:n,type:type.value,annual:a,actual:x});save();render();name.value=annual.value=actual.value=""}
+function remove(i){data.splice(i,1);save();render()}
+function resetData(){data=JSON.parse(JSON.stringify(samples));save();render()}
+function render(){let r=rate(), y=year.value, ok=0;ys.textContent=y.replace("-","–");rs.textContent=r*100+"%";cs.textContent=data.length;out.innerHTML="";
+data.forEach((c,i)=>{let t=c.annual*r,f=fee(t),good=c.actual>=t;if(good)ok++;out.innerHTML+=`<tr><td><b>${c.name}</b></td><td>${c.type}</td><td>${c.annual.toFixed(2)}</td><td>${t.toFixed(2)}</td><td>${c.actual.toFixed(2)}</td><td>${money(f)}</td><td class="${good?"ok":"bad"}">${good?"Compliant":"Non-Compliant"}</td><td><button class="red" onclick="remove(${i})">X</button></td></tr>`});oks.textContent=ok}
+render();
+</script></body></html>
